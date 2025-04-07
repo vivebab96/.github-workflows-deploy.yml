@@ -28,3 +28,33 @@ jobs:
       run: |
         echo "Add your deployment script here"
       # For example, you can call an SSH deploy script or push to Vercel/Netlify
+          - name: 🔐 Setup SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd /var/www/yourapp
+          git pull
+          npm install
+          npm run build
+          pm2 restart app
+    - name: 🐳 Build Docker image
+      run: docker build -t your-app .
+
+    - name: 📤 Push to Docker registry
+      run: docker push your-dockerhub-username/your-app
+
+    - name: 🚀 Deploy via SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          docker pull your-dockerhub-username/your-app
+          docker stop your-app || true
+          docker rm your-app || true
+          docker run -d --name your-app -p 80:3000 your-dockerhub-username/your-app
+
